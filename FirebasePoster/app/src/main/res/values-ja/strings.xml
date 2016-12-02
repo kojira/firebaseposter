@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">FirebasePoster</string>
+    <string name="hint_url">hoge-12345</string>
+    <string name="label_rootkey">root key:</string>
+    <string name="hint_rootkey">fuga</string>
+    <string name="start">start</string>
+    <string name="stop">stop</string>
+    <string name="get">get</string>
+
+    <string name="device">デバイス</string>
+    <string name="accelerometer">加速度</string>
+    <string name="humidity">湿度</string>
+    <string name="temperature">温度</string>
+    <string name="alert_not_input_url">firebaseのURLとキーを入力してください</string>
+</resources>
