@@ -18,38 +18,13 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="https://" />
+            android:text="@string/label_root_path" />
 
         <EditText
-            android:id="@+id/editUrl"
+            android:id="@+id/editRootPath"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:hint="@string/hint_url"
-            android:inputType="textUri"
-            android:lines="1" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=".firebaseio.com/" />
-    </LinearLayout>
-
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/label_rootkey" />
-
-        <EditText
-            android:id="@+id/editRootKey"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:hint="@string/hint_url"
+            android:hint="@string/hint_root_path"
             android:inputType="text"
             android:lines="1" />
     </LinearLayout>

@@ -46,8 +46,7 @@ public class MainActivity extends AppCompatActivity {
             DeviceFeature.TEMPERATURE,
     };
     Button mButtonStart;
-    EditText mFirebaseUrl;
-    EditText mRootKey;
+    EditText mRootPath;
     List<LinkingDevice> mDeviceList;
     ArrayAdapter<String> mDeviceListAdapter;
     Spinner mDeviceListSpinner;
@@ -67,8 +66,8 @@ public class MainActivity extends AppCompatActivity {
         mButtonStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if ((mFirebaseUrl.getText().length() <= 0) || (mRootKey.getText().length() <= 0)) {
-                    Toast.makeText(MainActivity.this, R.string.alert_not_input_url, Toast.LENGTH_SHORT).show();
+                if (mRootPath.getText().length() <= 0) {
+                    Toast.makeText(MainActivity.this, R.string.alert_not_input_path, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 if (!mService.getScanning()) {
@@ -191,17 +190,11 @@ public class MainActivity extends AppCompatActivity {
                 mButtonStart.setText(getString(R.string.start));
             }
         }
-        mFirebaseUrl = (EditText) findViewById(R.id.editUrl);
-        mRootKey = (EditText) findViewById(R.id.editRootKey);
-        String url = Prefs.getString(this, PreferenceKeys.PREF_KEY_FIREBASE_URL);
-        String key = Prefs.getString(this, PreferenceKeys.PREF_KEY_FIREBASE_ROOT_KEY);
-        L.i("url:" + url);
-        L.i("key:" + key);
-        if (url != null) {
-            mFirebaseUrl.setText(url);
-        }
-        if (key != null) {
-            mRootKey.setText(key);
+        mRootPath = (EditText) findViewById(R.id.editRootPath);
+        String path = Prefs.getString(this, PreferenceKeys.PREF_KEY_FIREBASE_ROOT_PATH);
+        L.i("path:" + path);
+        if (path != null) {
+            mRootPath.setText(path);
         }
 
 
@@ -209,28 +202,26 @@ public class MainActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if ((mFirebaseUrl.getText().length() <= 0) || (mRootKey.getText().length() <= 0)) {
-                    Toast.makeText(MainActivity.this, R.string.alert_not_input_url, Toast.LENGTH_SHORT).show();
+                if (mRootPath.getText().length() <= 0) {
+                    Toast.makeText(MainActivity.this, R.string.alert_not_input_path, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 mSensorDataList.clear();
                 mSensorListAdapter.notifyDataSetChanged();
                 mService.getSensorData(10, new PosterService.SensorDataListener() {
+                    @Override
+                    public void onSensorData(final SensorData data) {
+                        L.i("onSensorData:" + data.data);
+                        runOnUiThread(new Runnable() {
                             @Override
-                            public void onSensorData(final SensorData data) {
-                                L.i("onSensorData:" + data.data);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        mSensorDataList.add(data);
-                                        mSensorListAdapter.notifyDataSetChanged();
-                                    }
-                                });
+                            public void run() {
+                                mSensorDataList.add(data);
+                                mSensorListAdapter.notifyDataSetChanged();
                             }
-                        }, buildFirebaseUrl(mFirebaseUrl.getText().toString())
-                        , mRootKey.getText().toString());
-                Prefs.putString(MainActivity.this, PreferenceKeys.PREF_KEY_FIREBASE_URL, mFirebaseUrl.getText().toString());
-                Prefs.putString(MainActivity.this, PreferenceKeys.PREF_KEY_FIREBASE_ROOT_KEY, mRootKey.getText().toString());
+                        });
+                    }
+                }, mRootPath.getText().toString());
+                Prefs.putString(MainActivity.this, PreferenceKeys.PREF_KEY_FIREBASE_ROOT_PATH, mRootPath.getText().toString());
             }
         });
     }
@@ -256,9 +247,8 @@ public class MainActivity extends AppCompatActivity {
                 //選択したFeatureで上書き
                 device.setFeature(feature);
             }
-            mService.startGetSensorData(buildFirebaseUrl(mFirebaseUrl.getText().toString()), mRootKey.getText().toString(), mDeviceList);
-            Prefs.putString(MainActivity.this, PreferenceKeys.PREF_KEY_FIREBASE_URL, mFirebaseUrl.getText().toString());
-            Prefs.putString(MainActivity.this, PreferenceKeys.PREF_KEY_FIREBASE_ROOT_KEY, mRootKey.getText().toString());
+            mService.startGetSensorData(mRootPath.getText().toString(), mDeviceList);
+            Prefs.putString(MainActivity.this, PreferenceKeys.PREF_KEY_FIREBASE_ROOT_PATH, mRootPath.getText().toString());
         }
     }
 
@@ -273,7 +263,4 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
     }
 
-    private String buildFirebaseUrl(String projectId) {
-        return "https://".concat(projectId).concat(".firebaseio.com/");
-    }
 }

@@ -9,11 +9,12 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
-import com.firebase.client.ChildEventListener;
-import com.firebase.client.DataSnapshot;
-import com.firebase.client.Firebase;
-import com.firebase.client.FirebaseError;
-import com.firebase.client.Query;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 
 import net.kojira.linking.LinkingDevice;
 import net.kojira.linking.SensorData;
@@ -32,14 +33,13 @@ import java.util.Map;
 public class PosterService extends Service {
     private static final String INTENT_ACTION_ALARM = "ALARM";
     static boolean started = false;
-    private static String mFirebaseUrl;
-    private static String mRootKey;
+    private static String mRootPath;
     private final IBinder mBinder = new LocalBinder();
     private boolean scanning = false;
     private List<SensorDataRetriever> mSensorDataRetrieverList = new ArrayList<>();
     private List<LinkingDevice> mDeviceAddressList;
 
-    private Firebase mFirebaseRef;
+    private DatabaseReference mDatabaseRef;
     private SensorDataListener mSensorDataListener;
     private ChildEventListener mChildEventListener = new ChildEventListener() {
         @Override
@@ -85,8 +85,8 @@ public class PosterService extends Service {
         }
 
         @Override
-        public void onCancelled(FirebaseError firebaseError) {
-            L.i("onCancelled:" + firebaseError.toString());
+        public void onCancelled(DatabaseError databaseError) {
+            L.i("onCancelled:" + databaseError.toString());
         }
     };
 
@@ -104,22 +104,18 @@ public class PosterService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         L.i("start");
-        Firebase.setAndroidContext(this);
         started = true;
 
         if (intent != null && intent.getAction() != null && intent.getAction().equals(INTENT_ACTION_ALARM)) {
-            requestSensorData(mFirebaseUrl, mRootKey, mDeviceAddressList);
+            requestSensorData(mRootPath, mDeviceAddressList);
         }
 
         return START_NOT_STICKY;
     }
 
-    private void requestSensorData(String url, String key, List<LinkingDevice> deviceList) {
-        if (mFirebaseUrl != null && !mFirebaseUrl.equals(url)) {
-            mFirebaseRef = new Firebase(mFirebaseUrl);
-        }
-        mFirebaseUrl = url;
-        mRootKey = key;
+    private void requestSensorData(String path, List<LinkingDevice> deviceList) {
+        mDatabaseRef = FirebaseDatabase.getInstance().getReference();
+        mRootPath = path;
         mDeviceAddressList = deviceList;
         mSensorDataRetrieverList.clear();
         for (LinkingDevice device : mDeviceAddressList) {
@@ -129,15 +125,15 @@ public class PosterService extends Service {
                 sensorDataRetriever.requestSensorData(new SensorDataRetriever.SensorDataListener() {
                     @Override
                     public void onSensorData(SensorData data) {
-                        if (mFirebaseRef == null) {
-                            mFirebaseRef = new Firebase(mFirebaseUrl);
+                        if (mDatabaseRef == null) {
+                            mDatabaseRef = FirebaseDatabase.getInstance().getReference();
                         }
                         Map<String, Object> post = new HashMap<String, Object>();
                         DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
                         Date date = new Date(data.timeStamp);
                         post.put("datetime", df.format(date));
                         post.put("timestamp", data.timeStamp);
-                        String path = mRootKey;
+                        String path = mRootPath;
                         switch (data.sensorType) {
                             case SensorData.SENSOR_TYPE_ACCELEROMETER:
                                 post.put("x", data.x);
@@ -164,7 +160,7 @@ public class PosterService extends Service {
                                 startAlarm();
                                 break;
                         }
-                        mFirebaseRef.child(path).push().setValue(post);
+                        mDatabaseRef.child(path).push().setValue(post);
                     }
 
                     @Override
@@ -176,10 +172,10 @@ public class PosterService extends Service {
         }
     }
 
-    public void startGetSensorData(String url, String key, List<LinkingDevice> deviceList) {
+    public void startGetSensorData(String path, List<LinkingDevice> deviceList) {
         scanning = true;
 
-        requestSensorData(url, key, deviceList);
+        requestSensorData(path, deviceList);
     }
 
     public void stopGetSensorData() {
@@ -222,16 +218,15 @@ public class PosterService extends Service {
         return alarmSender;
     }
 
-    public void getSensorData(int limit, SensorDataListener listener, String firebaseUrl, String rootKey) {
-        mFirebaseUrl = firebaseUrl;
-        mRootKey = rootKey;
+    public void getSensorData(int limit, SensorDataListener listener, String rootPath) {
+        mRootPath = rootPath;
         mSensorDataListener = listener;
 
-        if (mFirebaseRef == null) {
-            mFirebaseRef = new Firebase(mFirebaseUrl);
+        if (mDatabaseRef == null) {
+            mDatabaseRef = FirebaseDatabase.getInstance().getReference();
         }
 
-        Query recentPostsQuery = mFirebaseRef.child(mRootKey).limitToLast(limit);
+        Query recentPostsQuery = mDatabaseRef.child(mRootPath).limitToLast(limit);
         recentPostsQuery.removeEventListener(mChildEventListener);
         recentPostsQuery.addChildEventListener(mChildEventListener);
     }
