@@ -23,6 +23,7 @@ public class AccelerometerRetriever extends SensorDataRetriever {
             if (mOnSensorDataListener != null) {
                 SensorData data = new SensorData();
                 data.sensorType = SensorData.SENSOR_TYPE_ACCELEROMETER;
+                data.timeStamp = time;
                 data.x = x;
                 data.y = y;
                 data.z = z;
