@@ -57,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
     private SensorListAdapter mSensorListAdapter;
     private List<CheckBox> mCheckBoxList;
 
+    private int mDevicePosition;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,11 +107,13 @@ public class MainActivity extends AppCompatActivity {
         mDeviceListSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                mDevicePosition = position;
                 updateView(position);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
+                mDevicePosition = 0;
                 updateView(0);
             }
         });
@@ -142,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
         if (DeviceFeature.hasFeature(device.getFeature(), DeviceFeature.HUMIDITY)) {
             mCheckBoxList.get(1).setEnabled(true);
         }
-        if (DeviceFeature.hasFeature(device.getFeature(), DeviceFeature.HUMIDITY)) {
+        if (DeviceFeature.hasFeature(device.getFeature(), DeviceFeature.TEMPERATURE)) {
             mCheckBoxList.get(2).setEnabled(true);
         }
     }
@@ -237,17 +241,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void startScan() {
         if (mService != null) {
-            for (LinkingDevice device : mDeviceList) {
-                int feature = 0;
-                for (int i = 0; i < mCheckBoxList.size(); i++) {
-                    if (mCheckBoxList.get(i).isChecked()) {
-                        feature |= (1 << mFeatures[i]);
-                    }
+            List<LinkingDevice> targetDeviceList = new ArrayList<>();
+            LinkingDevice device = mDeviceList.get(mDevicePosition-1);
+            int feature = 0;
+            for (int i = 0; i < mCheckBoxList.size(); i++) {
+                if (mCheckBoxList.get(i).isChecked()) {
+                    feature |= (1 << mFeatures[i]);
                 }
-                //選択したFeatureで上書き
-                device.setFeature(feature);
             }
-            mService.startGetSensorData(mRootPath.getText().toString(), mDeviceList);
+            //選択したFeatureで上書き
+            LinkingDevice targetDevice = new LinkingDevice(device.getName(), device.getAddress(), feature);
+            targetDeviceList.add(targetDevice);
+            mService.startGetSensorData(mRootPath.getText().toString(), targetDeviceList);
             Prefs.putString(MainActivity.this, PreferenceKeys.PREF_KEY_FIREBASE_ROOT_PATH, mRootPath.getText().toString());
         }
     }
